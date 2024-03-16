@@ -120,7 +120,7 @@ $\widehat{Y_{BodyFat}} = \beta_{0} + \beta_{1}X_{Age} + \beta_{2}X_{Weight} + \b
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$\beta_{9}X_{Knee} + \beta_{10}X_{Ankle} + \beta_{11}X_{Biceps} + \beta_{12}X_{Forearm} + \beta_{9}X_{Wrist}$
 
 ```{r echo = FALSE}
-BFF=read.csv("bodyfat.csv")
+BFF=read.csv("bodyfat_data.csv")
 
 # First-order model with every regressor
 BFF_Full_Additive=lm(BodyFat~Age+Weight+Height+Neck+Chest+Abdomen+Hip+Thigh+Knee+Ankle+Biceps+Forearm+Wrist, data=BFF)
