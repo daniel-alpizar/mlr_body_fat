@@ -1,0 +1,661 @@
+---
+output: 
+  pdf_document:
+    includes:
+#      before_body: titlepage.tex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(lmtest)
+library(mctest)
+library(ggplot2)
+library(leaps)
+library(olsrr)
+library(GGally)
+library(gridExtra)
+```
+\begin{center}
+\Large \textbf{Introduction}
+\end{center}
+
+**Context**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Body fat tissue is important in regulating the body's health. Body fat regulates appetite, energy use, and overall metabolic health (Choe et al., 2016). However, excess body fat can be a problem. Excessive body fat in the form of obesity is an ongoing public health crisis and is strongly associated with an increased risk of cardiovascular diseases such as heart disease, stroke, and Type 2 diabetes (CDC, 2022b). One can be diagnosed with obesity by examining their Body Mass Index measurements (BMI) (CDC, 2022a). However, directly measuring body fat percentage is also important. Research has also found that increased risks of cardiovascular disease can also be present among healthy-weight adults with a higher percentage of body fat (Kim et al., 2013). Thus, one should be generally aware of their body fat percentage to monitor their health properly.  
+
+
+**Problem**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Instruments to measure body fat percentage are now very accurate. According to the University of New Mexico, techniques for measuring body fat percentage such as Underwater Water Weighing, Bioelectrical Impedance Analysis, and Air Displacement techniques can have a standard error of plus or minus 1 to 3% (UNM, n.d). However, these methods can be fairly expensive (HSPC, 2013). There are cheaper methods, such as using skinfold thickness (HSPC, 2013), but these cheaper methods require a trained technician to perform measurements. A study by Lahav et al. (2018) suggests that using body circumference measurements may be an alternative way to rapidly and accurately estimate one’s body fat percentage with minimal training and tools.  
+
+
+**Objectives**  
+*Overview*  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The overall intent of this project is to apply multiple linear regression theories and techniques to examine the accuracy of simple body circumference measurements to predict one’s body fat percentage. To achieve our overall intent we have the following Research Question and Goal.  
+
+
+*Research Question*  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Based on existing literature we seek to examine the accuracy of measuring the circumferences of one’s body parts to predict body fat percentage. Thus, we have developed the following research question:
+
+How effective is using body circumference measurements as a method to measure body fat percentage?  
+
+
+*Goal*  
+We seek to answer this question by working towards the following goals:  
+
+1. Generate a full additive model and reduce it to create a better-fitting model.
+2. Test the assumptions of the final model by using visual plots and formal hypothesis testing.
+3. Interpret the final model and suggest its implications on real-world use cases.
+4. Acknowledge the limitations of our study and suggest future directions.  
+  
+\begin{center}
+\Large \textbf{Methodology}
+\end{center}
+**Data Source**
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;We collected our data in CSV format from Kaggle, a data science competition platform that offers datasets that are freely available for use. The data we are using was organized into a study on body fat percentages in men by Johnson (1996), who received the data from Dr. Garth Fisher via personal communication to freely distribute the data for use for non-commercial purposes. The data we used for our regression analysis included the dependent variable body fat percentage as a function of age, weight, height, and the body circumference measurements for neck, chest, abdomen, hip, thigh, knee, ankle, biceps, forearm, and wrist. We read the dataset into R using the function "read.csv" to begin our analysis.  
+
+\pagebreak
+**Variable Explanations**
+
+In this dataset, body circumference measurements were recorded for 252 men. 
+Our response, outcome, or dependent variable is body fat percentage. Each participant’s body fat was calculated using Siri’s (1956) Equation:  
+
+
+\begin{align*}
+  \text{Body-Fat Percentage = } BF\% = \frac{495}{D} - 450 \\
+  \text{Where D = Body Density}
+\end{align*}
+
+The participant’s body density was measured using an underwater weighing technique. The underwater weighing technique measures the differences between the participant’s body weight in the air and their weight when submerged in water.  
+The following variables were measurements taken of the participants. According to Johnson (1996), the circumference measurements of each body part were done using tape measurements. We plan to use them as our predictor or independent variables:  
+
+1. Age (years) quantitative: Participants age  
+1. Weight (lbs.) quantitative: Weight of the participant in the air  
+1. Height (inches) quantitative:  Height of participant  
+1. Neck Circumference (cm) quantitative  
+1. Chest Circumference (cm) quantitative  
+1. Abdomen Circumference (cm) quantitative: at the umbilicus and level with iliac crest  
+1. Hip Circumference (cm) quantitative  
+1. Thigh Circumference (cm) quantitative  
+1. Knee Circumference (cm) quantitative  
+1. Ankle Circumference (cm) quantitative  
+1. Biceps (extended) circumference (cm) quantitative:  
+1. Forearm circumference (cm) quantitative  
+1. Wrist circumference (cm) quantitative: Distal to the styloid process  
+
+**Distribution of Work**  
+  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Gabriel will work on introducing the topic and generating a starting additive model. Daniel will work on reducing the model, testing for interactions, and creating higher-order models until a significant model is found. Jocelyn will work on checking assumptions for the significant model. Khalil will work on interpreting the final model and writing the discussion. Each member will examine the steps taken to achieve the final model and the assumptions made to check the model's reliability. Each member will review the final draft of the report before submission.
+
+\pagebreak
+**Modelling plan**  
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Multicollinearity poses a significant challenge, potentially impacting the accuracy of estimated coefficients and reducing the regression model's statistical power. Our dataset contains independent variables that might exhibit substantial multicollinearity due to their nature as different physical measurements of the same individual, potentially reflecting the same underlying information.  
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Therefore, we will initially implement a linear regression model with all predictors, followed by multicollinearity testing for each variable. Once we have eliminated variables with high multicollinearity, an all-possible-regressions-selection procedure will be employed to identify the "best" predictors of body fat percentage. This process will consider the following criteria: adjusted R-squared, Mallows Cp criterion, Akaike information criterion (AIC), and Bayesian information criterion (BIC).  
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Following confirmation of the main effects, individual t-tests will be conducted to assess the presence of significant higher-order terms and interactions. Subsequently, an additional F-test will evaluate the overall significance of these higher-order terms and interactions. Any higher-order terms or interactions deemed statistically significant will be incorporated into the final model. Our model will then test the following assumptions as shown below:
+
+1. Linearity Assumption - Review residual plots
+2. Equal Variance Assumption (heteroscedasticity) - Using Breusch-Pagan test
+3. Normality Assumption - Using Shapiro-Wilk normality test
+4. Multicollinearity - Using variance inflation factors (VIF)
+5. Outliers - check Cook's distance and leverage  
+
+If our model violates any of these assumptions, we will revisit our work to identify potential modifications and improvements. The Independence Assumption will be assumed due to the independent nature of our data, where each observation was collected from a distinct individual.
+  
+
+\begin{center}
+\Large \textbf{Results}
+\end{center}  
+**Variable Selection Procedures**
+
+We began by building a first-order model containing all available independent variables, then tested the full additive model for multicollinearity with Variance Inflation Factors (VIFs) to assess whether any of the regressors offered redundant information.  
+
+
+First Order Model  
+
+$\widehat{Y_{BodyFat}} = \beta_{0} + \beta_{1}X_{Age} + \beta_{2}X_{Weight} + \beta_{3}X_{Height} + \beta_{4}X_{Neck} + \beta_{5}X_{Chest} + \beta_{6}X_{Abdomen} + \beta_{7}X_{Hip} + \beta_{8}X_{Thigh} +$  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$\beta_{9}X_{Knee} + \beta_{10}X_{Ankle} + \beta_{11}X_{Biceps} + \beta_{12}X_{Forearm} + \beta_{9}X_{Wrist}$
+
+```{r echo = FALSE}
+BFF=read.csv("bodyfat.csv")
+
+# First-order model with every regressor
+BFF_Full_Additive=lm(BodyFat~Age+Weight+Height+Neck+Chest+Abdomen+Hip+Thigh+Knee+Ankle+Biceps+Forearm+Wrist, data=BFF)
+```  
+\pagebreak
+\[
+\begin{array}{|l|c|c|}
+\hline
+& \text{VIF} & \text{Detection} \\
+\hline
+\text{Age} & 2.2604 & 0 \\
+\text{Weight} & 32.8260 & 1 \\
+\text{Height} & 1.6725 & 0 \\
+\text{Neck} & 4.2288 & 0 \\
+\text{Chest} & 9.3899 & 0 \\
+\text{Abdomen} & 11.4448 & 1 \\
+\text{Hip} & 14.4445 & 1 \\
+\text{Thigh} & 7.6088 & 0 \\
+\text{Knee} & 4.4864 & 0 \\
+\text{Ankle} & 1.8870 & 0 \\
+\text{Biceps} & 3.5506 & 0 \\
+\text{Forearm} & 2.1477 & 0 \\
+\text{Wrist} & 3.3066 & 0 \\
+\hline
+\end{array}
+\]
+
+\begin{center}
+Table 1: VIF  Multicollinearity Diagnostics
+\end{center}
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;From Table 1, we identified several explanatory variables with high VIFs, indicating multicollinearity. Specifically, Weight, Chest, Abdomen, Hip, and Thigh are all physical measurements that appear highly correlated and likely provide redundant information to the model. To address this, we adopted a sequential variable selection approach. We constructed various first-order models, each excluding one of these five variables, and compared their performance based on VIF values, R-squared, and Root Mean Squared Error (RMSE).  
+
+```{r echo = FALSE}
+BFF_VIF5=lm(BodyFat~Age+Height+Neck+Abdomen+Knee+Ankle+Biceps+Forearm+Wrist, data=BFF)
+```
+
+\[
+\begin{array}{|l|c|c|c|c|c|c|c|}
+\hline
+& \text{VIF} & \text{VIF} & \text{VIF} & \text{VIF} & \text{VIF} &\\
+\text{Regressor} & \text{Weight} & \text{Chest} & \text{Abdomen} & \text{Hip} & \text{Thigh} & \text{R}^2 & \text{RMSE}\\
+\hline
+\text{Step 1} & 32.826 & 9.390 & 11.445 & 14.445 & 7.609 & 0.729 & 4.283 \\
+\text{Step 2} & * & 7.759 & 10.998 & 10.212 & 7.579 & 0.727 & 4.299 \\
+\text{Step 3} & & 4.791 & * & 8.311 & 7.403 & 0.592 & 5.256 \\
+\text{Step 4} & & * & 6.791 & 10.185 & 7.406 & 0.727 & 4.298 \\
+\text{Step 5} & & & 4.421 & * & 6.094 & 0.720 & 4.355 \\
+\text{Step 6} & & & * & 3.553 & * & 0.721 & 4.348 \\
+\hline
+\end{array}
+\]
+
+\begin{center}
+Table 2: VIF values as variables are removed sequentially
+\end{center}
+
+Through this iterative process, we determined that only Abdomen contributes significantly to the model. Removing Weight, Chest, Hip, and Thigh did not significantly degrade model fit while effectively resolving the multicollinearity issue. All our VIF values are now in the range of 1 to 4, which means that it suggests that our model exhibits moderate multicollinearity, but it is not severe enough to warrant corrective measures.
+
+Our new first-order model becomes:
+
+$$\widehat{Y_{BodyFat}} = \beta_{0} + \beta_{1}X_{Age} + \beta_{2}X_{Height} + \beta_{3}X_{Neck} + \beta_{4}X_{Abdomen} + \beta_{5}X_{Knee} + \beta_{6}X_{Ankle} + \beta_{7}X_{Biceps} + \beta_{8}X_{Forearm} + \beta_{9}X_{Wrist}$$ 
+
+
+**All-Possible-Regressions-Selection Procedure**
+
+The various criteria used for model selection suggest a diverse range of potentially significant regressors. R-squared increases rapidly up to 4 explanatory variables and shows a gradual rise thereafter. Mallows Cp and AIC criteria recommend using up to 8 variables, while BIC suggests between 3 and 5. To refine our selection further, we will perform individual t-tests on the obtained coefficients.
+
+```{r echo = FALSE}
+# All-Possible-Regressions-Selection Procedure
+reg_subsetBFF=regsubsets(BodyFat~Age+Height+Neck+Abdomen+Knee+Ankle+Biceps+Forearm+Wrist, data=BFF, nv=9)
+reg_summary=summary(reg_subsetBFF)
+
+# Selection criteria
+OLS_subsetBFF=ols_step_best_subset(BFF_VIF5, details=FALSE)
+AdjustedR=c(OLS_subsetBFF$adjr)
+CP=c(OLS_subsetBFF$cp)
+AIC=c(OLS_subsetBFF$aic)
+BIC=c(reg_summary$bic)
+```
+
+
+\pagebreak
+**Hypothesis Statement for Individual T-tests:**
+
+\begin{gather*}
+H_{0}: \beta_{i} = 0 \\
+H_{A}: \beta_{i} \neq 0 \\
+\text{i=Age, Height, Neck, Abdomen, Knee, Ankle, Biceps, Forearm, Wrist}
+\end{gather*}
+
+
+**Main Effects Individual T-tests:**
+\begin{gather*}
+Age: t = 3.167, p = 0.001740 \\
+Height: t = -1.885, p = 0.060615 \\
+Neck: t = -2.680, p = 0.007882 \\
+Abdomen: t = 15.899, p < 2e-16 \\
+Knee: t = -0.905, p = 0.366626 \\
+Ankle: t = 0.293, p = 0.769511 \\
+Biceps: t = 0.556, p = 0.578792 \\
+Forearm: t = 2.308, p = 0.21847 \\
+Wrist: t = -3.646, p = 0.000326 \\
+\end{gather*}
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Individual t-tests ($\alpha = 0.05$) were conducted to select the best predictors based on their individual significance. Rejecting the null hypothesis in favor of the alternative indicates that Age, Neck, Abdomen, and Wrist are significant individual predictors of body fat percentage. Consequently, these variables will be included in our model for further analysis of interaction and higher-order terms. The resulting main effects model is presented below:
+
+Our reduced first-order model:  
+
+$$\widehat{Y_{BodyFat}} = \beta_{0} + \beta_{1}X_{Age} + \beta_{2}X_{Neck} + \beta_{3}X_{Abdomen} + \beta_{5}X_{Wrist}$$ 
+
+
+
+**Hypothesis Statement for Individual T-tests (Higher Order Terms):**
+
+\begin{gather*}
+H_{0}: \beta_{i} = 0 \\
+H_{A}: \beta_{i} \neq 0\\
+i=Age^{2}, Neck^{2}, Abdomen^{2}, Wrist^{2}
+\end{gather*}
+
+
+**Higher Order Individual T-tests:**
+\begin{gather*}
+Age^{2}: t = 0.651, p = 0.5158 \\
+Neck^{2}: t = -0.116, p = 0.9076 \\
+Abdomen^{2}: t = -2.311, p = 0.0217 \\
+Wrist^{2}: t = 0.696, p = 0.4873 \\
+\end{gather*}
+```{r echo = FALSE}
+# Full Second Order Model
+BFF_2Order_Full=lm(BodyFat~Age+I(Age^2)+Neck+I(Neck^2)+Abdomen+I(Abdomen^2)+Wrist+I(Wrist^2), data=BFF)
+#summary(BFF_2Order_Full)
+
+# Reduced Second Order Model
+BFF_2Order_Reduced=lm(BodyFat~Age+Neck+Abdomen+I(Abdomen^2)+Wrist, data=BFF)
+```
+
+Upon examining potential higher-order terms, only the Abdomen variable initially appeared significant based on individual t-tests. However, its significance vanished when interaction terms were incorporated into the model. Therefore, Abdomen was excluded from the final model. A subsequent partial F-test, compared to our best-fitted model, will further justify this decision.  
+
+
+**Hypothesis Statement for Individual T-tests (Interaction Terms):**
+
+\begin{gather*}
+H_{0}: \beta_{i} = 0 \\
+H_{A}: \beta_{i} \neq 0\\
+i=Age*Neck, Age*Abdomen, Age*Wrist, Neck*Abdomen, Neck*Wrist, Abdomen*Wrist
+\end{gather*}
+
+
+**Interaction Terms T-tests:**
+\begin{gather*}
+Age*Neck: t = 0.762, p = 0.4467 \\
+Age*Abdomen: t = -1.532, p = 0.1270 \\
+Age*Wrist: t = 2.060, p = 0.0405 \\
+Neck*Abdomen: t = -1.237, p = 0.02173 \\
+Neck*Wrist: t = -0.681, p = 0.4967 \\
+Abdomen*Wrist: t = 0.021, p = 0.9829
+\end{gather*}
+
+```{r echo = FALSE}
+# Full interaction model
+BFF_Interac_Full=lm(BodyFat~(Age+Neck+Abdomen+Wrist)^2, data=BFF)
+
+# Reduced interaction model
+BFF_Interac_Reduced = lm(BodyFat~Age+Neck+Abdomen+Wrist+Age*Wrist+Neck*Abdomen, data = BFF)
+```
+
+Among the several interaction terms tested, only two were found significant: Age:Wrist (positive coefficient) and Neck:Abdomen (negative coefficient). This interaction reveals intriguing relationships that will be explored further in detail. Notably, both the main effects and these two significant interaction terms are highly significant at this stage. 
+
+
+**Hypothesis Statement for ANOVA Test:**
+
+\begin{gather*}
+H_{0}: \beta * X_{Abdomen}^{2} = 0 \\
+H_{A}: \beta * X_{Abdomen}^{2} \neq 0\\
+\end{gather*}
+
+
+```{r echo = FALSE}
+# Interaction and second order model
+BFF_2Order_Interac = lm(BodyFat~Age+Neck+Abdomen+Wrist+Age*Wrist+Neck*Abdomen+I(Abdomen^2), data = BFF)
+```  
+
+
+We performed a final ANOVA test to verify that the higher-order term for the Abdomen variable had significant effect in the presence of interaction variables. We achieved this by comparing our model containing only main effects and interactions with a similar model including also the the higher-order term for the Abdomen variable. The ANOVA results (Df = 242, F = 1.9279, p = 0.1663) failed to reject the null hypothesis, indicating that the higher-order term did not significantly predict body fat percentage. Consequently, this term was excluded from the final model. Table 3 below summarizes the results of the partial F-test.  
+
+| Source of Variation 	  | Degrees of Freedom 	| Sum of Squares 	| Mean Squares 	| F          	| P-value   |
+|:-----------------------:|:------------------:	|:--------------:	|:------------:	|:----------:	|:---------:|
+| Regression  	          |        1         	  |    34.627      	|   34.627     	| 1.9279     	| 0.1663    |
+| Residual.               |        242         	|    4346.7      	|   17.962     	|           	|           |
+| Total               	  |        243          |    4381.3     	|              	|            	|           |
+
+\begin{center}
+Table 3: ANOVA Table 
+\end{center}
+
+
+The best fitted model with interaction terms is presented below:
+
+$$\widehat{Y_{BodyFat}} = \beta_{0} + \beta_{1}X_{Age} + \beta_{2}X_{Neck} + \beta_{3}X_{Abdomen} + \beta_{4}X_{Wrist} + \beta_{5}X_{Age*Wrist} + \beta_{6}X_{Neck*Abdomen}$$
+\pagebreak
+\begin{center}
+\Large \textbf{Multiple Regression Assumptions}
+\end{center}
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In this section, we will be performing a diagnostics analysis to determine if our model meets the assumptions for multiple regression. It is important to validate these assumptions as multiple regression models rely on these assumptions of data, and if these assumptions are not met this may mean our results are inaccurate or unreliable.
+
+**Linearity Assumption**
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The linearity assumption means that the linear regression model assumes that there is a straight-line relationship between the predictors and the response. To check this assumption, we plot the residuals versus the predicted values of $\hat{y}_i$. For the linearity assumption to hold, we are looking for a residual plot that has no discernible pattern. As seen in the residual plot for our model below (Figure #), there is no pattern that may suggest nonlinearity. The residuals are randomly scattered around the horizontal axis (zero line), this suggests that the relationship is linear, and the linearity assumption is met.
+
+``` {r echo = FALSE}
+plot(BFF_Interac_Reduced, which = 1)
+```
+
+
+\begin{center}
+Figure 1: Plot to check for linearity 
+\end{center}
+
+
+**Equal Variance Assumption**
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The equal variance assumption requires the error terms to have a constant variance, which is also called homoscedasticity. To identify the presence of non-constant variance or heteroscedasticity in our model, we will examine the residuals versus predicted values plot and scale-location plot, as well as perform the Breusch-Pagan test. From residual plot, and scale-location plot (Figure 2) below, the residuals appear to be randomly spread around the horizontal line, this suggests that the variance of the error terms are constant. To more formally test for homo/heteroscedasticity, we conduct a Breusch-Pagan test to test the following hypotheses: 
+
+\begin{align*}
+H_{0}: \text{heteroscedasticity is not present}\\
+H_{a}: \text{heteroscedasticity is present}   
+\end{align*}
+
+After conducting the Breusch-Pagan test on the model, we found a test statistic of BP = 4.1317 with a p-value of 0.6589. The p-value is larger than our significance level of 0.05 meaning we do not have sufficient evidence to reject the null hypothesis, suggesting that heteroscedasticity is not present in our model, and the equal variance assumption is met.  
+
+``` {r echo = FALSE, figures-side2, fig.show="hold", out.width="50%"}
+plot(BFF_Interac_Reduced, which = 1)
+plot(BFF_Interac_Reduced, which = 3)
+```
+
+
+\begin{center}
+Figure 2: Plots to check for constant variance
+\end{center}
+
+**Normality Assumption**
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The normality assumption requires that the errors between observed and predicted values should be normally distributed. To identify normality in our model or lack thereof, we will examine a histogram and a normal probability (Q-Q) plot of residuals, as well as perform the Shapiro-Wilk normality test. From the histogram of residuals, and normal Q-Q plot (Figure 3) below, the residuals seem to generally follow a normal distribution. However the histogram does seem to be slightly right-skewed, and the normality plot seems to have a bit of a S-curve with residuals trailing off at either end of the diagonal line. To more formally test for normality, we conduct a Shapiro-Wilk test to test the following hypotheses:  
+\begin{align*}
+H_{0}: \text{the sample data are significantly normally distributed}\\
+H_{a}: \text{the sample data are not significantly normally distributed}   
+\end{align*}
+ 
+After conducting the Shapiro-Wilk test on the model, we found a test statistic of W=0.9914 with a p-value of 0.1503. The p-value is larger than our significance level of 0.05 meaning we do not have sufficient evidence to reject the null hypothesis, suggesting that the sample data are significantly normally distributed, and the normality assumption is met.  
+
+``` {r echo = FALSE, figures-side1, fig.show="hold", out.width="50%"}
+hist(residuals(BFF_Interac_Reduced))
+plot(BFF_Interac_Reduced, which=2)
+```
+  
+  
+\begin{center}
+Figure 3: Plots to check for normality
+\end{center}
+  
+**Multicollinearity**
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Multicollinearity exists when two or more of the independent variables used in the model are correlated with each other, providing redundant information. To check if multicollinearity exists within our model, we will check the variance inflation factors (VIF) of each model predictor as well as checking all pairwise combinations of predictors in scatterplots. From the pairwise scatterplots of the main effect predictors (Figure 4), we can see that the independent variables Abdomen, Wrist, and Neck have some sort of linear correlation. This makes sense since these measurements are most likely in some way linearly correlated. For example, as abdomen circumference increases the neck or wrist measurement would most likely also increase. To more formally check for multicollinearity we calculate the VIF values for each main effect predictor. From the VIF diagnostics table (Table 4), we see that $VIF_{Age} = 1.0953$, $VIF_{Neck} = 2.4046$, $VIF_{Abdomen} = 2.3084$, $VIF_{Wrist} = 3.2904$. From these results we do see that there is no multicollinearity detected for all of the predictors. The VIF values are all quite low for each predictor, with values that range from $1 \le VIF \le 4$, which does suggest moderate collinearity, but it is not severe enough to warrant corrective measures.   
+```{r echo = FALSE}
+BFF_model_4=lm(BodyFat~Age+Abdomen+Wrist+Neck, data=BFF)
+pairs(~Age+Abdomen+Wrist+Neck, data=BFF)
+```
+
+
+\begin{center}
+Figure 4: Plots to check for multicollinearity 
+\end{center}
+
+
+\[
+\begin{array}{|l|c|c|}
+\hline
+& \text{VIF} & \text{Detection} \\
+\hline
+\text{Age} & 1.0953 & 0 \\
+\text{Neck} & 2.4046 & 0 \\
+\text{Abdomen} & 2.3084 & 0 \\
+\text{Wrist} & 3.2904 & 0 \\
+\hline
+\end{array}
+\]
+
+\begin{center}
+Table 4: VIF Multicollinearity Diagnostics 
+\end{center}
+
+**Outliers**
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;We next need to check for any particular observations that differ from the majority of the cases in the data set, as these points may be influential and cause parameter estimates to change dramatically. To check for influential outliers, we can examine the residuals versus leverage plot to see if there any points that fall outside of the Cook's distance of 0.5. We will also calculate the leverage value of each point and determine if there are any points that have a leverage value that is greater than $\frac{2p}{n}$ or $\frac{3p}{n}$.
+
+
+```{r echo = FALSE, figures-side3, fig.show="hold", out.width="50%"}
+plot(BFF_Interac_Reduced,pch=18,col="red",which=c(4))
+plot(BFF_Interac_Reduced, which=5)
+```
+
+
+\begin{center}
+Figure 5: Plot to check for influential points 
+\end{center}
+
+The plot above shows Cook's distance plotted for each observation (Figure 5). The plot indentifies an influential observation at point #39 as it has a Cook's Distance value greater than 0.5. Next we used the leverage plot below (Figure 6), to remove outliers beyond 2p/n and 3/pn thresholds. Our model was then refitted for both of these thresholds, but there were no substantial changes to our $R^{2}_{adj}$ value.  
+
+```{r echo = FALSE}
+lev3=hatvalues(BFF_Interac_Reduced)
+p3 = length(coef(BFF_Interac_Reduced))
+n3 = nrow(BFF)
+outlier2p3 = lev3[lev3>(2*p3/n3)]
+outlier3p3 = lev3[lev3>(3*p3/n3)]
+
+plot(rownames(BFF),lev3, main = "Leverage in Advertising Dataset", xlab="observation",
+    ylab = "Leverage Value")
+abline(h = 2 *p3/n3, lty = 1)
+abline(h = 3 *p3/n3, lty = 1)
+
+# Defining the threshold for outliers
+pq2 = length(coef(BFF_Interac_Reduced))
+nq2 = nrow(BFF)
+threshold = 3 * pq2 / nq2
+
+# Getting the indices of the outliers
+outlier_indices = which(lev3 > threshold)
+
+# Removing the outliers from the dataset
+BFF2 <- BFF[-outlier_indices, ]
+
+BFF_Interac_Reduced2 = lm(BodyFat~Age+Neck+Abdomen+Wrist+Age*Wrist+Neck*Abdomen, data = BFF2)
+```
+
+\begin{center}
+Figure 6: Plots to check for outliers 
+\end{center}
+
+\pagebreak
+Our final, best-fitted model includes main effects and interactions. We express the final model in a few different ways as shown below.
+
+1. Final model expanded with all terms  
+
+$\hat{Y_{BF\%}} = \beta_{0}+\beta_{1}X_{Age}+\beta_{2}X_{Neck}+\beta_{3}X_{Abdomen}+\beta_{4}X_{Wrist}+\beta_{5}X_{Age:Wrist}+\beta_{6}X_{Neck:Abdomen}$  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$=-33.239-1.107X_{Age}+1.722X_{Neck}+1.653X_{Abdomen}-4.958X_{Wrist}+0.064X_{Age:Wrist}-$  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$0.022X_{Neck:Abdomen}$
+
+
+2. Final model with Age and Neck terms collected  
+
+$\hat{Y_{BF\%}} = \beta_{0}+\beta_{3}X_{Abdomen}+\beta_{4}X_{Wrist}+(\beta_{1}+\beta_{5}X_{Wrist})(X_{Age})+(\beta_{2}+\beta_{6}X_{Abdomen})(X_{Neck})$  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$=-33.239 + 1.653X_{Abdomen} - 4.958X_{Wrist} + (-1.107 + 0.064X_{Wrist})(X_{Age}) + (1.722 - 0.022X_{Abdomen})(X_{Neck})$
+
+3. Final model with Abdomen and Wrist terms collected
+
+
+$\hat{Y_{BF\%}} = \beta_{0}+\beta_{1}X_{Age}+\beta_{2}X_{Neck}+(\beta_{4}+\beta_{5}X_{Age})(X_{Wrist})+(\beta_{3}+\beta_{6}X_{Neck})(X_{Abdomen})$   
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$=-33.239-1.107X_{Age}+1.722X_{Neck}+(-4.958+0.064X_{Age})(X_{Wrist})+(1.653-0.022X_{Neck})(X_{Abdomen})$
+
+
+$R^{2}_{adj}$ *and* $RMSE$ *of Best Fitted Model*
+
+$R^{2}_{adj} = 0.7338$, this value indicates that 73.38% percent of the variation of the response variable body fat percentage is explained by the final model containing the predictors age, neck, abdomen, wrist, and interactions between $age \times wrist$, $neck \times abdomen$.
+
+
+$RMSE = 4.246$, this value indicates that the standard deviation of unexplained variation is estimation of response variable body fat percentage is 4.246%.  
+
+**Interpreting Coefficients**
+
+There are a total of four $\beta_{i}$ (i= Age, Neck, Abdomen, Wrist) coefficients in our final model. These are interpreted below in relation to body fat percentage. 
+
+\begin{align*}
+\hat{B_{Age}} = -1.107 + 0.064(X_{Wrist})
+\end{align*}
+
+This means that as the subject's age increases by 1 year, body fat percentage decreases by approximately $-1.107 + 0.064X_{Wrist}$ percent.
+
+\begin{align*}
+\hat{B_{Neck}} = 1.722 - 0.022(X_{Abdomen})
+\end{align*}
+
+This means that as the subject's neck circumference increases by 1 cm, body fat percentage changes by approximately $1.722 - 0.022X_{Abdomen}$ percent.
+
+\begin{align*}
+\hat{B_{Abdomen}} = 1.653 - 0.022(X_{Neck})
+\end{align*}
+
+This means that as the subject's abdomen circumference increases by 1 cm, body fat percentage changes by approximately $1.653 - 0.022X_{Neck}$ percent.
+
+\begin{align*}
+\hat{B_{Wrist}} = -4.958 + 0.064(X_{Age})
+\end{align*}
+
+This means that as the subject's age increase by 1 year, body fat percentage decreases by approximately $-1.107 + 0.064X_{Wrist}$ percent.  
+
+\pagebreak
+\begin{center}
+\Large \textbf{Conclusion}
+\end{center}
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;To summarize, our regression analysis yielded some interesting findings regarding the relationship between body circumference measurements and body fat percentage. The variables age, neck, abdomen, and wrist emerged as significant predictors, each exhibiting relatively low Variance Inflation Factor (VIF) values. These lower VIF values suggest a lesser degree of multicollinearity for these predictors compared to others in the dataset, indicating that they contribute uniquely to the model.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Interestingly, our analysis revealed significant interactions, particularly between neck and abdomen circumferences, as well as between age and wrist circumference. These interactions are significant at the 0.05 level. The interaction between neck and abdomen might reflect variations in body fat distribution patterns, while the interaction of age and wrist circumference could be indicative of changes in body composition with age. 
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Our final model meets all the assumptions of multiple regression. This compliance with fundamental assumptions - including linearity, independence of errors, homoscedasticity, and normal distribution of residuals - lends credibility to our results. This ensures that the predictions and inferences drawn are valid within the scope of our study.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;By achieving our goal of using body circumference measurements as reliable predictors for body fat percentage, this analysis contributes valuable insights into non-invasive and inexpensive methods for assessing body composition.  
+
+\begin{center}
+\Large \textbf{Discussion}
+\end{center}
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In our regression analysis, multicollinearity emerged as a significant concern due to the nature of our predictors, which included various body circumference measurements. Given that these measurements are inherently related to each other, there is a high likelihood of linear relationships among these variables. Multicollinearity can inflate the variances of the parameter estimates and make the model more sensitive to changes in the model's specification, which ultimately undermines the reliability and interpretability of our regression coefficients.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;To mitigate the issues caused by multicollinearity in future analyses, we would suggest strategically combining colinear variables into single predictors. This approach can reduce redundancy in the dataset. For example, exploring ratios like abdomen to chest or hip to thigh circumference can provide more distinct predictors and could give us more insight.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;However, while addressing multicollinearity, it's important to keep in mind the balance of statistical integrity and model interpretability. The transformed or combined variables should still be interpretable and relevant in the context of predicting body fat percentage. Looking forward, rigorous testing of these approaches would be vital to increasing model accuracy.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;One important limitation to note in our analysis is the exclusive focus on male participants. This gender-specific dataset significantly restricts the scope of our findings, as the predictors of body fat percentage can vary considerably between genders due to differences in body composition, hormones, and metabolic rates. This limitation is crucial when considering the application of our regression model. This means our current model may yield inaccurate predictions if applied to women or non-binary individuals.  
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Looking ahead, we recommend conducting a similar regression analysis using a more inclusive dataset that encompasses all genders. Incorporating gender as a categorical predictor variable could offer more nuanced insights and enhance the model's accuracy and applicability. Furthermore, such an inclusive approach would allow for the exploration of gender-specific factors in body fat percentage prediction, leading to more effective health and fitness recommendations. By broadening the scope of our research to include diverse gender identities, we can ensure that our findings are more reflective of the population.  
+
+\pagebreak
+\begin{center}
+\Large \textbf{References}
+\end{center}
+
+CDC. (2022a). Body mass index (Bmi). Centers for Disease Control and Prevention. Retrieved from https://www.cdc.gov/healthyweight/assessing/bmi/index.html
+
+
+CDC. (2022b). Obesity is a common, serious, and costly disease. Centers for Disease Control and Prevention. Retrieved from https://www.cdc.gov/obesity/data/adult.html
+
+
+Choe, S. S., Huh, J. Y., Hwang, I. J., Kim, J. I., & Kim, J. B. (2016). Adipose tissue remodeling: Its role in energy metabolism and metabolic disorders. Frontiers in Endocrinology, 7, 30. https://doi.org/10.3389/fendo.2016.00030
+
+
+Harvard School of Public Health (HSPC). (2013). Body fat. The Nutrition Source. Retrieved from https://www.hsph.harvard.edu/nutritionsource/healthy-weight/measuring-fat/
+
+
+Johnson, R. W. (1996). Fitting percentage of body fat to simple body measurements. Journal of Statistics Education, 4(1), 6. https://doi.org/10.1080/10691898.1996.11910505
+
+
+Kim, J. Y., Han, S., & Yang, B. (2013). Implication of high‐body‐fat percentage on cardiometabolic risk in middle‐aged, healthy, normal‐weight adults. Obesity, 21(8), 1571–1577. https://doi.org/10.1002/oby.20020 
+
+
+Siri, W. E. (1956). "Gross Composition of the Body," in Advances in Biological and Medical Physics (Vol. IV), eds. J. H. Lawrence and C. A. Tobias, New York: Academic Press.
+UNM. (n.d.) Body composition. Retrieved from https://www.exphyslab.unm.edu/body-composition  
+
+
+Lahav, Y., Epstein, Y., Kedem, R., & Schermann, H. (2018). A novel body circumferences-based estimation of percentage body fat. British Journal of Nutrition, 119(6), 720–725. https://doi.org/10.1017/S0007114518000223  
+
+Title page image was generated with the assistance of DALL-E 3.
+
+\pagebreak
+\begin{center}
+\Large \textbf{Appendix}
+\end{center}
+``` {r echo = TRUE}
+
+# Full Additive Model
+summary(BFF_Full_Additive)
+
+# Initial VIF test to discard redundant regressors
+imcdiag(BFF_Full_Additive, method="VIF")
+
+# Initial VIF test to discard redundant regressors
+BFF_VIF1=lm(BodyFat~Age+Height+Neck+Chest+Abdomen+Hip+Thigh+Knee+Ankle+Biceps+Forearm+Wrist, data=BFF)
+BFF_VIF2=lm(BodyFat~Age+Height+Neck+Chest+Hip+Thigh+Knee+Ankle+Biceps+Forearm+Wrist, data=BFF)
+BFF_VIF3=lm(BodyFat~Age+Height+Neck+Abdomen+Hip+Thigh+Knee+Ankle+Biceps+Forearm+Wrist, data=BFF)
+BFF_VIF4=lm(BodyFat~Age+Height+Neck+Abdomen+Thigh+Knee+Ankle+Biceps+Forearm+Wrist, data=BFF)
+
+# Summary to compare fitting parameters
+summary(BFF_VIF1)
+summary(BFF_VIF2)
+summary(BFF_VIF3)
+summary(BFF_VIF4)
+summary(BFF_VIF5)
+ 
+# VIF values
+imcdiag(BFF_VIF1, method="VIF")
+imcdiag(BFF_VIF2, method="VIF")
+imcdiag(BFF_VIF3, method="VIF")
+imcdiag(BFF_VIF4, method="VIF")
+imcdiag(BFF_VIF5, method="VIF")
+
+# All possible regression summary
+reg_summary
+
+# Selection Criteria
+cbind(AdjustedR,CP,AIC,BIC)
+
+# Main effect individual t-tests
+summary(BFF_VIF5)
+
+# Full second order model
+summary(BFF_2Order_Full)
+
+# Reduced second order model
+summary(BFF_2Order_Reduced)
+
+# ANOVA test between second order models
+anova(BFF_2Order_Reduced, BFF_2Order_Full)
+
+# Full interaction model
+summary(BFF_Interac_Full)
+
+# Reduced interaction model
+summary(BFF_Interac_Reduced)
+
+# ANOVA between interaction models
+anova(BFF_Interac_Reduced, BFF_Interac_Full)
+
+# Interaction and second order model
+summary(BFF_2Order_Interac)
+
+# ANOVA between Reduced interaction model and Interaction and second order model
+print(anova(BFF_Interac_Reduced, BFF_2Order_Interac))
+
+# Breusch-Pagan test
+bptest(BFF_Interac_Reduced)
+
+# Shapiro-Wilk test
+shapiro.test(residuals(BFF_Interac_Reduced))
+
+# VIF for final model
+imcdiag(BFF_model_4, method="VIF")
+
+# Cook's distance
+BFF[cooks.distance(BFF_Interac_Reduced)>0.5,] #have Cook statistics larger than 0.5
+
+# Leverage points
+print(outlier2p3)
+print(outlier3p3)
+
+# Final Model with dataset that removed outliers
+summary(BFF_Interac_Reduced2)
+```
