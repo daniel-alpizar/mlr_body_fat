@@ -49,4 +49,4 @@ The repository includes the following:
 - Diagnostic plots and model validation outputs
 - Project report in PDF format
 
-For questions or contributions, please contact [GitHub username] or submit an issue/pull request on this repository.
+For questions or contributions, please contact [@daniel-alpizar](https://github.com/daniel-alpizar) or submit an issue/pull request on this repository.
